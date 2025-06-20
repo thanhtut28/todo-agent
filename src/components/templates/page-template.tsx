@@ -1,7 +1,19 @@
-import { db } from "~/server/db";
+import { getCachedBlocks } from "~/server/db/queries";
+import Block from "../item/block";
+import type { BlockWithContent } from "~/server/db/schema";
 
-export default async function PageTemplate() {
-  const paragraphs = await db.query.paragraphs.findMany();
+interface Props {
+  pageId: string;
+}
 
-  return <div>This is a page template</div>;
+export default async function PageTemplate({ pageId }: Props) {
+  const blocks = await getCachedBlocks(pageId);
+
+  return (
+    <>
+      {blocks.map((block) => (
+        <Block key={block.id} block={block as BlockWithContent} />
+      ))}
+    </>
+  );
 }
