@@ -1,5 +1,6 @@
 "use server";
 
+import { uuid } from "drizzle-orm/gel-core";
 import { openai } from ".";
 import { db } from "./db";
 import {
@@ -10,8 +11,11 @@ import {
   paragraphs,
   links,
   listItems,
+  type BlockWithContent,
+  bgColor,
 } from "./db/schema";
 import { revalidateTag } from "next/cache";
+import { sortBlocksByDisplayOrder } from "./db/queries";
 
 // Types for AI-generated content
 export interface AIGeneratedBlock {
@@ -119,14 +123,31 @@ Response: {
   ]
 }
 
+/Advanced use case:
+User: "List 5 reminders for travel to Japan"
+Response: {
+  "pageName": "Travel to Japan",
+  "blocks": [
+    {"type": "heading", "content": {"text": "Travel to Japan", "variant": "h1", "fontSize": "2xl", "fontWeight": "bold"}},
+    {"type": "checkbox", "content": {"text": "Book flight", "checked": true, "bgColor": "red"}},
+    {"type": "checkbox", "content": {"text": "Book hotel", "checked": true, "bgColor": "orange"}},
+    {"type": "checkbox", "content": {"text": "Pack luggage", "checked": true, "bgColor": "yellow"}},
+    {"type": "checkbox", "content": {"text": "Get visa", "checked": true, "bgColor": "green"}},
+    {"type": "checkbox", "content": {"text": "Check weather", "checked": true}}
+  ]
+}
+
 RULES:
+- Default color theme is dark mode for now (white is recommended for dark mode)
 - Always include a main heading as the first block
 - Use appropriate content types for the context
 - For lists/todos, use checkbox type
 - Keep text concise and actionable
 - Default checkbox to false (unchecked)
 - Use reasonable font sizes (md for normal, 2xl for main headings)
-- Stick to common colors: black, blue, green, red, gray`;
+- Stick to common colors: white(recommended for dark mode) ,black, blue, green, red, gray
+- Priority colors: red, orange, yellow. Only use these colors for the most important items if needed.
+- Use bgColor for checkbox if needed.`;
 
 export async function generateText(prompt: string) {
   const stream = await openai.chat.completions.create({
@@ -173,99 +194,37 @@ export async function generateStructuredContent(
 
 export async function createPageFromAI(
   prompt: string,
-): Promise<{ success: boolean; pageId?: number; error?: string }> {
+  pageId: string,
+  lastBlockDisplayOrder: number,
+): Promise<{ success: boolean; result?: BlockWithContent; error?: string }> {
   try {
     // Generate structured content
     const aiContent = await generateStructuredContent(prompt);
     console.log(aiContent);
 
-    // Create page
-    const [newPage] = await db
-      .insert(pages)
-      .values({ name: aiContent.pageName })
-      .returning();
+    // // Create page
+    // const [newPage] = await db
+    //   .insert(pages)
+    //   .values({ name: aiContent.pageName })
+    //   .returning();
 
-    if (!newPage) {
-      throw new Error("Failed to create page");
-    }
+    // if (!newPage) {
+    //   throw new Error("Failed to create page");
+    // }
 
     // Process each block
-    for (const aiBlock of aiContent.blocks) {
-      // Create the main block
-      const [block] = await db
-        .insert(blocks)
-        .values({
-          text: aiBlock.content.text,
-          pageId: newPage.id,
-        })
-        .returning();
-
-      if (!block) continue;
-
-      // Create specific content based on type
-      switch (aiBlock.type) {
-        case "heading":
-          await db.insert(headings).values({
-            text: aiBlock.content.text,
-            blockId: block.id,
-            variant: aiBlock.content.variant ?? "h2",
-            fontSize: aiBlock.content.fontSize ?? "2xl",
-            fontWeight: aiBlock.content.fontWeight ?? "bold",
-            color: aiBlock.content.color ?? "black",
-          });
-          break;
-
-        case "paragraph":
-          await db.insert(paragraphs).values({
-            text: aiBlock.content.text,
-            blockId: block.id,
-            fontSize: aiBlock.content.fontSize ?? "md",
-            fontWeight: aiBlock.content.fontWeight ?? "normal",
-            color: aiBlock.content.color ?? "black",
-          });
-          break;
-
-        case "checkbox":
-          await db.insert(checkboxes).values({
-            text: aiBlock.content.text,
-            blockId: block.id,
-            checked: aiBlock.content.checked ?? false,
-            fontSize: aiBlock.content.fontSize ?? "md",
-            fontWeight: aiBlock.content.fontWeight ?? "normal",
-            color: aiBlock.content.color ?? "black",
-          });
-          break;
-
-        case "list":
-          await db.insert(listItems).values({
-            text: aiBlock.content.text,
-            blockId: block.id,
-            listType: aiBlock.content.listType ?? "unordered",
-            fontSize: aiBlock.content.fontSize ?? "md",
-            fontWeight: aiBlock.content.fontWeight ?? "normal",
-            color: aiBlock.content.color ?? "black",
-          });
-          break;
-
-        case "link":
-          await db.insert(links).values({
-            text: aiBlock.content.text,
-            url: aiBlock.content.url ?? "#",
-            blockId: block.id,
-            fontSize: aiBlock.content.fontSize ?? "md",
-            fontWeight: aiBlock.content.fontWeight ?? "medium",
-            color: aiBlock.content.color ?? "blue",
-          });
-          break;
-      }
-    }
+    const blockWithContent = covertStructuredContentToBlockWithContent(
+      aiContent,
+      pageId,
+      lastBlockDisplayOrder,
+    );
 
     // Revalidate cache
     revalidateTag("pages");
     revalidateTag("blocks");
-    revalidateTag(`page-${newPage.id}`);
+    revalidateTag(`page-${pageId}`);
 
-    return { success: true, pageId: newPage.id };
+    return { success: true, result: blockWithContent };
   } catch (error) {
     console.error("Error creating AI-generated page:", error);
     return {
@@ -288,4 +247,191 @@ export async function generateAndStreamContent(prompt: string) {
   });
 
   return stream;
+}
+
+function covertStructuredContentToBlockWithContent(
+  aiContent: AIGeneratedPage,
+  pageId: string,
+  lastBlockDisplayOrder: number,
+): BlockWithContent {
+  const _draftBlock: BlockWithContent = {
+    id: 0,
+    text: aiContent.pageName,
+    createdAt: new Date(),
+    updatedAt: null,
+    pageId: parseInt(pageId),
+    checkboxes: [],
+    headings: [],
+    paragraphs: [],
+    listItems: [],
+    links: [],
+    page: {
+      id: 0,
+      name: "",
+      createdAt: new Date(),
+      updatedAt: null,
+    },
+    displayOrder: lastBlockDisplayOrder + 1,
+  };
+
+  aiContent.blocks.forEach((aiBlock, index) => {
+    switch (aiBlock.type) {
+      case "heading":
+        _draftBlock.headings.push({
+          id: index,
+          blockId: _draftBlock.id,
+          text: aiBlock.content.text,
+          variant: aiBlock.content.variant ?? "h2",
+          fontSize: aiBlock.content.fontSize ?? "2xl",
+          fontWeight: aiBlock.content.fontWeight ?? "bold",
+          color: aiBlock.content.color ?? "white",
+          bgColor: "transparent",
+          fontStyle: "normal",
+          createdAt: new Date(),
+          updatedAt: null,
+          displayOrder: index,
+        });
+        break;
+
+      case "paragraph":
+        _draftBlock.paragraphs.push({
+          id: index,
+          blockId: _draftBlock.id,
+          text: aiBlock.content.text,
+          fontSize: aiBlock.content.fontSize ?? "md",
+          fontWeight: aiBlock.content.fontWeight ?? "bold",
+          color: aiBlock.content.color ?? "white",
+          bgColor: "transparent",
+          fontStyle: "normal",
+          createdAt: new Date(),
+          updatedAt: null,
+          displayOrder: index,
+        });
+        break;
+
+      case "checkbox":
+        _draftBlock.checkboxes.push({
+          id: index,
+          blockId: _draftBlock.id,
+          text: aiBlock.content.text,
+          checked: aiBlock.content.checked ?? false,
+          fontSize: aiBlock.content.fontSize ?? "md",
+          fontWeight: aiBlock.content.fontWeight ?? "bold",
+          color: aiBlock.content.color ?? "white",
+          bgColor: "transparent",
+          fontStyle: "normal",
+          createdAt: new Date(),
+          updatedAt: null,
+          displayOrder: index,
+        });
+        break;
+
+      case "list":
+        _draftBlock.listItems.push({
+          id: index,
+          blockId: _draftBlock.id,
+          text: aiBlock.content.text,
+          listType: aiBlock.content.listType ?? "unordered",
+          fontSize: aiBlock.content.fontSize ?? "md",
+          fontWeight: aiBlock.content.fontWeight ?? "bold",
+          color: aiBlock.content.color ?? "white",
+          bgColor: "transparent",
+          fontStyle: "normal",
+          createdAt: new Date(),
+          updatedAt: null,
+          displayOrder: index,
+        });
+        break;
+
+      case "link":
+        _draftBlock.links.push({
+          id: index,
+          blockId: _draftBlock.id,
+          text: aiBlock.content.text,
+          underline: true,
+          url: aiBlock.content.url ?? "#",
+          fontSize: aiBlock.content.fontSize ?? "md",
+          fontWeight: aiBlock.content.fontWeight ?? "bold",
+          color: aiBlock.content.color ?? "white",
+          bgColor: "transparent",
+          fontStyle: "normal",
+          createdAt: new Date(),
+          updatedAt: null,
+          displayOrder: index,
+        });
+    }
+  });
+  return _draftBlock;
+}
+
+async function insertBlocksIntoDb(aiContent: AIGeneratedPage, pageId: string) {
+  for (const aiBlock of aiContent.blocks) {
+    // Create the main block
+    const [block] = await db
+      .insert(blocks)
+      .values({
+        text: aiBlock.content.text,
+        pageId: parseInt(pageId),
+      })
+      .returning();
+
+    if (!block) continue;
+
+    // Create specific content based on type
+    switch (aiBlock.type) {
+      case "heading":
+        await db.insert(headings).values({
+          text: aiBlock.content.text,
+          blockId: block.id,
+          variant: aiBlock.content.variant ?? "h2",
+          fontSize: aiBlock.content.fontSize ?? "2xl",
+          fontWeight: aiBlock.content.fontWeight ?? "bold",
+          color: aiBlock.content.color ?? "white",
+        });
+        break;
+
+      case "paragraph":
+        await db.insert(paragraphs).values({
+          text: aiBlock.content.text,
+          blockId: block.id,
+          fontSize: aiBlock.content.fontSize ?? "md",
+          fontWeight: aiBlock.content.fontWeight ?? "normal",
+          color: aiBlock.content.color ?? "white",
+        });
+        break;
+
+      case "checkbox":
+        await db.insert(checkboxes).values({
+          text: aiBlock.content.text,
+          blockId: block.id,
+          checked: aiBlock.content.checked ?? false,
+          fontSize: aiBlock.content.fontSize ?? "md",
+          fontWeight: aiBlock.content.fontWeight ?? "normal",
+          color: aiBlock.content.color ?? "white",
+        });
+        break;
+
+      case "list":
+        await db.insert(listItems).values({
+          text: aiBlock.content.text,
+          blockId: block.id,
+          listType: aiBlock.content.listType ?? "unordered",
+          fontSize: aiBlock.content.fontSize ?? "md",
+          fontWeight: aiBlock.content.fontWeight ?? "normal",
+          color: aiBlock.content.color ?? "white",
+        });
+        break;
+
+      case "link":
+        await db.insert(links).values({
+          text: aiBlock.content.text,
+          url: aiBlock.content.url ?? "#",
+          blockId: block.id,
+          fontSize: aiBlock.content.fontSize ?? "md",
+          fontWeight: aiBlock.content.fontWeight ?? "medium",
+          color: aiBlock.content.color ?? "white",
+        });
+        break;
+    }
+  }
 }

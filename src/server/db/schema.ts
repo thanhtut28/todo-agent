@@ -1,8 +1,8 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
-import { Relation, relations, sql, type InferSelectModel } from "drizzle-orm";
-import { index, pgTableCreator, pgEnum, PgTable } from "drizzle-orm/pg-core";
+import { relations, sql, type InferSelectModel } from "drizzle-orm";
+import { index, pgEnum, pgTableCreator } from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -92,6 +92,7 @@ export const checkboxes = createTable(
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+    displayOrder: d.integer().default(0).notNull(),
   }),
   (t) => [index("checkbox_text_idx").on(t.text)],
 );
@@ -119,6 +120,7 @@ export const listItems = createTable(
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+    displayOrder: d.integer().default(0).notNull(),
   }),
   (t) => [index("list_text_idx").on(t.text)],
 );
@@ -146,6 +148,7 @@ export const headings = createTable(
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+    displayOrder: d.integer().default(0).notNull(),
   }),
   (t) => [index("heading_text_idx").on(t.text)],
 );
@@ -172,6 +175,7 @@ export const paragraphs = createTable(
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+    displayOrder: d.integer().default(0).notNull(),
   }),
   (t) => [index("paragraph_text_idx").on(t.text)],
 );
@@ -200,6 +204,7 @@ export const links = createTable(
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+    displayOrder: d.integer().default(0).notNull(),
   }),
   (t) => [index("link_text_idx").on(t.text)],
 );
@@ -221,6 +226,7 @@ export const blocks = createTable(
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+    displayOrder: d.integer().default(0).notNull(),
   }),
   (t) => [index("block_text_idx").on(t.text)],
 );

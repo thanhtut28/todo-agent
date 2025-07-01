@@ -1,5 +1,3 @@
-import { generatePageWithAI } from "~/server/db/actions";
-
 export default function HomePage() {
   return (
     <div className="bg-background text-foreground min-h-screen p-8">
@@ -17,7 +15,7 @@ export default function HomePage() {
             Create with AI ✨
           </h2>
 
-          <form action={generatePageWithAI} className="space-y-4">
+          {/* <form action={handleGeneratePage} className="space-y-4">
             <div>
               <input
                 type="text"
@@ -33,7 +31,7 @@ export default function HomePage() {
             >
               Generate Page
             </button>
-          </form>
+          </form> */}
         </div>
       </div>
     </div>
