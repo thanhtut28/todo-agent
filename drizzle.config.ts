@@ -9,4 +9,5 @@ export default {
     url: env.DATABASE_URL,
   },
   tablesFilter: ["todo-agent_*"],
+  out: "./drizzle",
 } satisfies Config;
