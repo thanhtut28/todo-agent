@@ -13,6 +13,7 @@ import {
 } from "~/server/db/actions";
 import { useEffect, useRef, useState } from "react";
 import {
+  twBgColor,
   twColor,
   twFontSize,
   twFontStyle,
@@ -26,7 +27,7 @@ interface Props {
   onUpdateDraft?: React.Dispatch<React.SetStateAction<BlockWithContent | null>>;
   isDraft?: boolean;
   shouldFocus?: boolean;
-  onEnterPress?: (type: CreateNewBlockType) => void;
+  onEnterPress?: (type: CreateNewBlockType, displayOrder: number) => void;
   onFocus?: () => void;
 }
 
@@ -42,8 +43,6 @@ export default function CheckboxItem({
   const [text, setText] = useState(checkbox.text);
   const [isEditing, setIsEditing] = useState(false);
   const contentRef = useRef<HTMLLabelElement>(null);
-
-  console.log(isDraft && isEditing);
 
   const handleCheckboxChange = async (checked: boolean) => {
     setChecked(checked);
@@ -69,7 +68,7 @@ export default function CheckboxItem({
   // Set initial content only once
   useEffect(() => {
     if (contentRef.current && !contentRef.current.textContent) {
-      contentRef.current.textContent = checkbox.text || "Type a heading...";
+      contentRef.current.textContent = checkbox.text || "";
     }
   }, [checkbox.text]);
 
@@ -105,10 +104,12 @@ export default function CheckboxItem({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLLabelElement>) => {
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLLabelElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      onEnterPress?.("checkbox");
+      contentRef.current?.blur();
+      setIsEditing(false);
+      onEnterPress?.("checkbox", checkbox.displayOrder);
     }
   };
 
@@ -132,7 +133,15 @@ export default function CheckboxItem({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div
+      className={cn(
+        "flex items-center gap-2 px-1 py-0.5 transition-all duration-200",
+        !isEditing && twBgColor[checkbox.bgColor],
+        {
+          "hover:bg-gray-800": !isEditing,
+        },
+      )}
+    >
       <Checkbox
         onClick={(e) => e.stopPropagation()}
         onCheckedChange={handleCheckboxChange}
@@ -160,7 +169,6 @@ export default function CheckboxItem({
           {
             "ring-opacity-50 border-1 border-blue-400": isEditing && !isDraft,
             "ring-opacity-50 border-1 border-white": isEditing && isDraft,
-            "hover:bg-gray-800": !isEditing,
             "text-blue-500": isDraft,
           },
         )}
