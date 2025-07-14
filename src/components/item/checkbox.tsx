@@ -1,16 +1,5 @@
 "use client";
 
-import type {
-  BlockWithContent,
-  Checkbox as CheckboxType,
-} from "~/server/db/schema";
-import { Checkbox } from "../ui/checkbox";
-import { Label } from "../ui/label";
-import {
-  deleteCheckbox,
-  updateCheckbox,
-  updateCheckboxText,
-} from "~/server/db/actions";
 import { useEffect, useRef, useState } from "react";
 import {
   twBgColor,
@@ -21,6 +10,17 @@ import {
   type CreateNewBlockType,
 } from "~/lib/types";
 import { cn } from "~/lib/utils";
+import {
+  deleteCheckbox,
+  updateCheckbox,
+  updateCheckboxText,
+} from "~/server/db/actions";
+import type {
+  BlockWithContent,
+  Checkbox as CheckboxType,
+} from "~/server/db/schema";
+import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
 
 interface Props {
   checkbox: CheckboxType;
@@ -29,6 +29,7 @@ interface Props {
   shouldFocus?: boolean;
   onEnterPress?: (type: CreateNewBlockType, displayOrder: number) => void;
   onFocus?: () => void;
+  isPreview?: boolean;
 }
 
 export default function CheckboxItem({
@@ -38,6 +39,7 @@ export default function CheckboxItem({
   shouldFocus,
   onEnterPress,
   onFocus,
+  isPreview = false,
 }: Props) {
   const [checked, setChecked] = useState<boolean>(!!checkbox.checked);
   const [text, setText] = useState(checkbox.text);
@@ -45,6 +47,7 @@ export default function CheckboxItem({
   const contentRef = useRef<HTMLLabelElement>(null);
 
   const handleCheckboxChange = async (checked: boolean) => {
+    if (isPreview) return;
     setChecked(checked);
     try {
       if (isDraft) {
@@ -65,10 +68,32 @@ export default function CheckboxItem({
     }
   };
 
+  // For revalidation state after update from db
+  useEffect(() => {
+    setChecked(checkbox.checked || false);
+  }, [checkbox.checked]);
+
+  // For preview state
+  useEffect(() => {
+    if (isPreview) {
+      setChecked(checkbox.checked || false);
+    }
+  }, [checkbox.checked, isPreview]);
+
+  useEffect(() => {
+    if (
+      isPreview &&
+      contentRef.current &&
+      contentRef.current.textContent !== checkbox.text
+    ) {
+      contentRef.current.textContent = checkbox.text ?? "";
+    }
+  }, [checkbox.text, isPreview]);
+
   // Set initial content only once
   useEffect(() => {
     if (contentRef.current && !contentRef.current.textContent) {
-      contentRef.current.textContent = checkbox.text || "";
+      contentRef.current.textContent = checkbox.text ?? "";
     }
   }, [checkbox.text]);
 
@@ -110,35 +135,37 @@ export default function CheckboxItem({
       contentRef.current?.blur();
       setIsEditing(false);
       onEnterPress?.("checkbox", checkbox.displayOrder);
+    } else if (e.key === "Backspace") {
+      if (e.currentTarget.textContent === "" && text === "") {
+        if (isDraft) {
+          onUpdateDraft?.((prev) => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              checkboxes: prev.checkboxes.filter((c) => c.id !== checkbox.id),
+            };
+          });
+          return;
+        } else {
+          await deleteCheckbox(checkbox.id);
+          return;
+        }
+      }
     }
   };
 
   const handleInput = async (e: React.FormEvent<HTMLLabelElement>) => {
-    if (e.currentTarget.textContent === "" && text === "") {
-      if (isDraft) {
-        onUpdateDraft?.((prev) => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            checkboxes: prev.checkboxes.filter((c) => c.id !== checkbox.id),
-          };
-        });
-        return;
-      } else {
-        await deleteCheckbox(checkbox.id);
-        return;
-      }
-    }
     setText(e.currentTarget.textContent ?? "");
   };
 
   return (
     <div
       className={cn(
-        "flex items-center gap-2 px-1 py-0.5 transition-all duration-200",
+        "flex w-full items-center gap-2 px-1 py-0.5 transition-all duration-200",
         !isEditing && twBgColor[checkbox.bgColor],
         {
-          "hover:bg-gray-800": !isEditing,
+          "hover:bg-gray-800": !isEditing && !isPreview,
+          "scale-75": isPreview,
         },
       )}
     >
@@ -151,8 +178,8 @@ export default function CheckboxItem({
       />
       <Label
         ref={contentRef}
-        contentEditable
-        suppressContentEditableWarning
+        contentEditable={!isPreview}
+        suppressContentEditableWarning={!isPreview}
         onFocus={() => {
           setIsEditing(true);
           onFocus?.();

@@ -14,29 +14,18 @@ import {
 } from "@dnd-kit/sortable";
 import { GripVerticalIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useState, type ButtonHTMLAttributes } from "react";
+import type { CreateNewBlockType } from "~/lib/types";
 import {
   cn,
   flattenBlockItems,
   swapDisplayOrder,
-  type BlockItemType,
-  type BlockItemVariant,
   type FlattenBlockItem,
 } from "~/lib/utils";
 import { createNewBlockItem, updateBlock } from "~/server/db/actions";
-import type {
-  BlockWithContent,
-  Checkbox as CheckboxType,
-  Heading as HeadingType,
-  ListItem as ListItemType,
-  Paragraph as ParagraphType,
-} from "~/server/db/schema";
+import type { BlockWithContent } from "~/server/db/schema";
 import SortableItem from "../sortable/sortable-item";
 import { Button } from "../ui/button";
-import CheckboxItem from "./checkbox";
-import HeadingItem from "./heading";
-import ParagraphItem from "./paragraph";
-import ListItem from "./list";
-import type { CreateNewBlockType } from "~/lib/types";
+import RenderBlockItem from "./render-block-item";
 
 interface Props {
   block: BlockWithContent;
@@ -90,7 +79,7 @@ export default function BlockItem({
     const toUpdateItems = items.filter(
       (item) => item.item.displayOrder > displayOrder,
     );
-    const { result, message } = await createNewBlockItem({
+    const { result } = await createNewBlockItem({
       type,
       displayOrder,
       blockId: block.id,
@@ -98,7 +87,6 @@ export default function BlockItem({
     });
 
     if (result) {
-      console.log("result", result);
       onFocus?.(result.id);
     }
   };
@@ -109,69 +97,6 @@ export default function BlockItem({
   ) => {
     await handleCreateNewBlock(type, displayOrder);
   };
-
-  function renderBlockItem(item: {
-    variant: BlockItemVariant;
-    item: BlockItemType;
-  }) {
-    switch (item.variant) {
-      case "heading":
-        return (
-          <HeadingItem
-            key={item.item.id}
-            heading={item.item as HeadingType}
-            onEnterPress={handleEnterPress}
-            onFocus={() => onFocus?.(item.item.id)}
-            shouldFocus={shouldFocus}
-            isDraft={isDraft}
-          />
-        );
-      case "checkbox":
-        return (
-          <CheckboxItem
-            key={item.item.id}
-            isDraft={isDraft}
-            onUpdateDraft={onUpdateDraft}
-            checkbox={item.item as CheckboxType}
-            onEnterPress={handleEnterPress}
-            onFocus={() => onFocus?.(item.item.id)}
-            shouldFocus={shouldFocus}
-          />
-        );
-      case "paragraph":
-        return (
-          <ParagraphItem
-            onEnterPress={handleEnterPress}
-            onFocus={() => onFocus?.(item.item.id)}
-            shouldFocus={shouldFocus}
-            onUpdateDraft={onUpdateDraft}
-            isDraft={isDraft}
-            key={item.item.id}
-            paragraph={item.item as ParagraphType}
-          />
-        );
-      case "list":
-        return (
-          <ListItem
-            listItem={item.item as ListItemType}
-            onEnterPress={handleEnterPress}
-            shouldFocus={shouldFocus}
-            isDraft={isDraft}
-            onFocus={() => onFocus?.(item.item.id)}
-            onUpdateDraft={onUpdateDraft}
-            key={item.item.id}
-          />
-        );
-      default:
-        return null;
-      // case "paragraph":
-      //   return <ParagraphItem paragraph={item} />;
-      // case "list":
-      //   return <ListItemItem listItem={item} />;
-      // case "link":
-      //   return <LinkItem link={item} />;
-    }
-  }
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -225,9 +150,19 @@ export default function BlockItem({
             )}
           >
             {flattenBlockItems(block).map((item) => (
-              <div key={item.item.id} className="flex items-center gap-2">
+              <div
+                key={`placeholder-${item.item.id}`}
+                className="flex items-center gap-2"
+              >
                 <GripVerticalIcon className="h-4 w-4 text-gray-500" />
-                {renderBlockItem(item)}
+                <RenderBlockItem
+                  item={item}
+                  isDraft={isDraft}
+                  onUpdateDraft={onUpdateDraft}
+                  onFocus={onFocus}
+                  onEnterPress={handleEnterPress}
+                  shouldFocus={shouldFocus}
+                />
               </div>
             ))}
           </div>
@@ -287,8 +222,20 @@ export default function BlockItem({
           >
             <div className={cn("flex h-full w-full flex-col gap-1.5", {})}>
               {items.map((item) => (
-                <SortableItem key={item.item.id} id={item.item.id}>
-                  {renderBlockItem(item)}
+                <SortableItem
+                  key={item.item.id}
+                  id={item.item.id}
+                  item={item.item}
+                  blockType={item.variant}
+                >
+                  <RenderBlockItem
+                    item={item}
+                    isDraft={isDraft}
+                    onUpdateDraft={onUpdateDraft}
+                    onFocus={onFocus}
+                    shouldFocus={shouldFocus}
+                    onEnterPress={handleEnterPress}
+                  />
                 </SortableItem>
               ))}
             </div>

@@ -7,40 +7,22 @@ import {
   type BlockItem,
 } from "~/server/agent/tool";
 import type {
-  BlockWithContent,
-  Heading as HeadingType,
-  Checkbox as CheckboxType,
-  Paragraph as ParagraphType,
-  ListItem as ListItemType,
-  Link as LinkType,
   Heading,
   Checkbox,
   Paragraph,
   ListItem,
   Link,
+  BlockWithContent,
 } from "~/server/db/schema";
 import type { AIGeneratedPage } from "~/server/openai";
+import type { BlockItemType, BlockItemVariantType } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export type BlockItemType =
-  | HeadingType
-  | CheckboxType
-  | ParagraphType
-  | ListItemType
-  | LinkType;
-
-export type BlockItemVariant =
-  | "heading"
-  | "checkbox"
-  | "paragraph"
-  | "list"
-  | "link";
-
 export type FlattenBlockItem = {
-  variant: BlockItemVariant;
+  variant: BlockItemVariantType;
   item: BlockItemType;
 };
 

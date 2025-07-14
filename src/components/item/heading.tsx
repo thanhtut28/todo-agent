@@ -5,6 +5,7 @@ import { cn } from "~/lib/utils";
 import { type BlockWithContent, type Heading } from "~/server/db/schema";
 import { updateHeadingText } from "~/server/db/actions";
 import {
+  twBgColor,
   twColor,
   twFontSize,
   twFontStyle,
@@ -20,6 +21,7 @@ interface Props {
   shouldFocus?: boolean;
   isDraft?: boolean;
   onUpdateDraft?: React.Dispatch<React.SetStateAction<BlockWithContent | null>>;
+  isPreview?: boolean;
 }
 
 export default function HeadingItem({
@@ -29,15 +31,39 @@ export default function HeadingItem({
   shouldFocus,
   isDraft,
   onUpdateDraft,
+  isPreview = false,
 }: Props) {
   const [text, setText] = useState(heading.text);
   const [isEditing, setIsEditing] = useState(false);
+  const [variant, setVariant] = useState(heading.variant);
   const contentRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    setText(heading.text);
+    setVariant(heading.variant);
+  }, [heading.text, heading.variant]);
+
+  useEffect(() => {
+    if (isPreview) {
+      setText(heading.text);
+      setVariant(heading.variant);
+    }
+  }, [heading.variant, isPreview, heading.text]);
+
+  useEffect(() => {
+    if (
+      isPreview &&
+      contentRef.current &&
+      contentRef.current.textContent !== heading.text
+    ) {
+      contentRef.current.textContent = heading.text ?? "";
+    }
+  }, [heading.text, isPreview]);
 
   // Set initial content only once
   useEffect(() => {
     if (contentRef.current && !contentRef.current.textContent) {
-      contentRef.current.textContent = heading.text || "";
+      contentRef.current.textContent = heading.text ?? "";
     }
   }, [heading.text]);
 
@@ -84,31 +110,47 @@ export default function HeadingItem({
     setText(e.currentTarget.textContent ?? "");
   };
 
-  const HeadingComponent = heading.variant as keyof React.JSX.IntrinsicElements;
-
-  return React.createElement(HeadingComponent, {
-    ref: contentRef,
-    contentEditable: true,
-    suppressContentEditableWarning: true,
-    className: cn(
-      "transition-all duration-200 outline-none",
-      twFontSize[heading.fontSize],
-      twFontWeight[heading.fontWeight],
-      twFontStyle[heading.fontStyle],
-      twColor[heading.color],
-      {
-        "ring-opacity-50 ring-1 ring-blue-400": isEditing && !isDraft,
-        "ring-opacity-50 ring-1 ring-white": isEditing && isDraft,
-        "hover:bg-gray-800": !isEditing,
-        "text-blue-500": isDraft,
-      },
-    ),
-    onFocus: () => {
-      setIsEditing(true);
-      onFocus?.();
-    },
-    onBlur: handleBlur,
-    onKeyDown: handleKeyDown,
-    onInput: handleInput,
-  });
+  return (
+    <div
+      ref={contentRef}
+      role="heading"
+      aria-level={
+        variant === "h1"
+          ? 1
+          : variant === "h2"
+            ? 2
+            : variant === "h3"
+              ? 3
+              : variant === "h4"
+                ? 4
+                : variant === "h5"
+                  ? 5
+                  : 6
+      }
+      contentEditable={!isPreview}
+      suppressContentEditableWarning={!isPreview}
+      className={cn(
+        "px-1 py-0.5 transition-all duration-200 outline-none",
+        twFontSize[heading.fontSize],
+        twFontWeight[heading.fontWeight],
+        twFontStyle[heading.fontStyle],
+        twColor[heading.color],
+        twBgColor[heading.bgColor],
+        {
+          "ring-opacity-50 ring-1 ring-blue-400": isEditing && !isDraft,
+          "ring-opacity-50 ring-1 ring-white": isEditing && isDraft,
+          "hover:bg-gray-800": !isEditing && !isPreview,
+          "text-blue-500": isDraft,
+          "scale-75": isPreview,
+        },
+      )}
+      onFocus={() => {
+        setIsEditing(true);
+        onFocus?.();
+      }}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      onInput={handleInput}
+    />
+  );
 }

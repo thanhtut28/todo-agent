@@ -20,6 +20,7 @@ interface Props {
   shouldFocus?: boolean;
   isDraft?: boolean;
   onUpdateDraft?: React.Dispatch<React.SetStateAction<BlockWithContent | null>>;
+  isPreview?: boolean;
 }
 
 export default function ListItem({
@@ -29,15 +30,26 @@ export default function ListItem({
   shouldFocus,
   onUpdateDraft,
   isDraft,
+  isPreview = false,
 }: Props) {
   const [text, setText] = useState(listItem.text);
   const [isEditing, setIsEditing] = useState(false);
   const contentRef = useRef<HTMLHeadingElement>(null);
 
+  useEffect(() => {
+    if (
+      isPreview &&
+      contentRef.current &&
+      contentRef.current.textContent !== listItem.text
+    ) {
+      contentRef.current.textContent = listItem.text ?? "";
+    }
+  }, [listItem.text, isPreview]);
+
   // Set initial content only once
   useEffect(() => {
     if (contentRef.current && !contentRef.current.textContent) {
-      contentRef.current.textContent = listItem.text || "";
+      contentRef.current.textContent = listItem.text ?? "";
     }
   }, [listItem.text]);
 
@@ -85,7 +97,11 @@ export default function ListItem({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div
+      className={cn("flex items-center gap-2", {
+        "scale-75": isPreview,
+      })}
+    >
       <span className="aspect-square h-2 w-2 rounded-full bg-gray-300" />
       <div
         ref={contentRef}
