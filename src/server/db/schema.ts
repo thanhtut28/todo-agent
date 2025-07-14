@@ -50,6 +50,13 @@ const colors = [
 ] as const;
 export const color = pgEnum("color", colors);
 export const bgColor = pgEnum("bg_color", colors);
+export const blockItemVariant = pgEnum("block_item_variant", [
+  "heading",
+  "checkbox",
+  "paragraph",
+  "list",
+  "link",
+]);
 
 export const fontWeight = pgEnum("font_weight", [
   "thin",

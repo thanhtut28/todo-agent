@@ -1,29 +1,166 @@
-# Create T3 App
+# Todo Agent 🤖✅
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+An AI-powered todo application with a modern block editor interface. Create, organize, and manage your tasks with the help of artificial intelligence.
 
-## What's next? How do I make an app with this?
+## ✨ Features
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+- **AI-Powered Content Generation**: Generate todo lists, daily plans, workout routines, and more using natural language prompts
+- **Block Editor Interface**: Modern, drag-and-drop block-based editor for organizing content
+- **Interactive Components**: Checkboxes, headings, lists, and paragraphs with real-time editing
+- **Customizable Styling**: Color and typography editors for personalized content
+- **Database Persistence**: All your data is stored securely using PostgreSQL
+- **Responsive Design**: Works seamlessly across desktop and mobile devices
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+## 🎥 Demo Videos
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+<!-- Place your video files in docs/videos/ folder and update these paths -->
 
-## Learn More
+### AI Content Generation
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+![AI Generation Demo](./public/assets/AI_content_generation.mov)
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+### Block Editor Features
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+![Inline Block Editing Demo](./public/assets/Inline_block_editing.mov)
 
-## How do I deploy this?
+![Editing with Block Editor](./public/assets/Editing_with_editor.mov)
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+## 🚀 Tech Stack
+
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS, Radix UI Components
+- **AI Integration**: OpenAI API
+- **Database**: PostgreSQL with Drizzle ORM
+- **Drag & Drop**: @dnd-kit
+- **Development**: ESLint, Prettier, TypeScript
+
+## 📦 Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/your-username/todo-agent.git
+   cd todo-agent
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   pnpm install
+   ```
+
+3. **Set up environment variables**
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Add your environment variables:
+
+   ```env
+   # Database
+   DATABASE_URL="postgresql://username:password@localhost:5432/todo_agent"
+
+   # OpenAI
+   OPENAI_API_KEY="your-openai-api-key"
+   ```
+
+4. **Start the database**
+
+   ```bash
+   ./start-database.sh
+   ```
+
+5. **Run database migrations**
+
+   ```bash
+   pnpm db:migrate
+   ```
+
+6. **Start the development server**
+   ```bash
+   pnpm dev
+   ```
+
+Visit [http://localhost:3000](http://localhost:3000) to see your application running.
+
+## 🗄️ Database Commands
+
+```bash
+# Generate migrations
+pnpm db:generate
+
+# Run migrations
+pnpm db:migrate
+
+# Push schema changes
+pnpm db:push
+
+# Open Drizzle Studio
+pnpm db:studio
+```
+
+## 🎨 Usage
+
+1. **Create AI-Generated Content**: Use natural language prompts to generate todo lists, plans, or any structured content
+2. **Edit with Block Editor**: Drag and drop blocks to reorder, edit text inline, and customize styling
+3. **Organize Tasks**: Use checkboxes to mark completed items and track progress
+4. **Customize Appearance**: Use the color and typography editors to style your content
+
+## 🏗️ Project Structure
+
+```
+src/
+├── app/                 # Next.js app router
+├── components/
+│   ├── editor/         # Block editor components
+│   ├── item/           # Content block types
+│   ├── layout/         # Layout components
+│   └── ui/             # Reusable UI components
+├── server/
+│   ├── agent/          # AI agent logic
+│   └── db/             # Database schema and queries
+└── lib/                # Utilities and types
+```
+
+## 🔧 Development
+
+```bash
+# Type checking
+pnpm typecheck
+
+# Linting
+pnpm lint
+pnpm lint:fix
+
+# Formatting
+pnpm format:check
+pnpm format:write
+
+# Build for production
+pnpm build
+
+# Run production build
+pnpm start
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [T3 Stack](https://create.t3.gg/)
+- AI powered by [OpenAI](https://openai.com/)
+
+---
+
+**Made with ❤️ and AI**

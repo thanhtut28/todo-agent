@@ -4,8 +4,15 @@ import type {
   fontStyle as pgFontStyleEnum,
   fontWeight as pgFontWeightEnum,
   headingVariant as pgHeadingVariantEnum,
+  blockItemVariant as pgBlockItemVariantEnum,
 } from "~/server/db/schema";
-import type { BlockItemVariant } from "./utils";
+import type {
+  Heading as HeadingType,
+  Checkbox as CheckboxType,
+  Paragraph as ParagraphType,
+  ListItem as ListItemType,
+  Link as LinkType,
+} from "~/server/db/schema";
 
 export type HeadingVariantType =
   (typeof pgHeadingVariantEnum.enumValues)[number];
@@ -13,8 +20,17 @@ export type FontSizeType = (typeof pgFontSizeEnum.enumValues)[number];
 export type FontWeightType = (typeof pgFontWeightEnum.enumValues)[number];
 export type FontStyleType = (typeof pgFontStyleEnum.enumValues)[number];
 export type ColorType = (typeof pgColorEnum.enumValues)[number];
+export type BlockItemVariantType =
+  (typeof pgBlockItemVariantEnum.enumValues)[number];
 
-export type CreateNewBlockType = BlockItemVariant | "placeholder";
+export type CreateNewBlockType = BlockItemVariantType | "placeholder";
+
+export type BlockItemType =
+  | HeadingType
+  | CheckboxType
+  | ParagraphType
+  | ListItemType
+  | LinkType;
 
 export const twFontSize: Record<FontSizeType, string> = {
   xs: "text-xs",

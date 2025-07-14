@@ -1,13 +1,18 @@
 "use server";
 
 import { run } from "@openai/agents";
-import { and, eq, gte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 import {
   covertAIGeneratedContentToBlockWithContent,
-  type BlockItemType,
   type FlattenBlockItem,
 } from "~/lib/utils";
+
+import type {
+  BlockItemType,
+  BlockItemVariantType,
+  CreateNewBlockType,
+} from "~/lib/types";
 import { db } from ".";
 import agent from "../agent/agent";
 import { createPageFromAI } from "../openai";
@@ -26,7 +31,6 @@ import {
   type ListItem,
   type Paragraph,
 } from "./schema";
-import type { CreateNewBlockType } from "~/lib/types";
 
 export async function updateCheckbox(checked: boolean, id: number) {
   try {
@@ -60,7 +64,6 @@ export async function generateStructuredContentWithAI(
       pageId,
       lastBlockDisplayOrder,
     );
-    console.log(result);
 
     return { success: true, result: result.result };
   } catch (error) {
@@ -260,6 +263,137 @@ export async function deleteBlockFromDb(id: number, pageId: string) {
       e instanceof Error ? e.message : "Unknown error",
     );
     return { success: false, message: "Failed to delete block" };
+  }
+}
+
+export async function updateBlockItem(
+  id: number,
+  item: BlockItemType,
+  oldItemType: BlockItemVariantType,
+  newItemType: BlockItemVariantType,
+) {
+  const { createdAt, updatedAt, ...rest } = item;
+
+  async function insertNewItem(
+    tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+    item: Omit<BlockItemType, "id">,
+  ) {
+    switch (newItemType) {
+      case "checkbox":
+        await tx.insert(checkboxSchema).values(item as Checkbox);
+        break;
+      case "heading":
+        await tx.insert(headingSchema).values(item as Heading);
+        break;
+      case "paragraph":
+        await tx.insert(paragraphSchema).values(item as Paragraph);
+        break;
+      case "list":
+        await tx.insert(listSchema).values(item as ListItem);
+        break;
+      case "link":
+        await tx.insert(linkSchema).values(item as Link);
+        break;
+      default:
+        throw new Error(`Unsupported item type`);
+    }
+  }
+
+  try {
+    switch (oldItemType) {
+      case "checkbox":
+        if (newItemType === "checkbox") {
+          await db
+            .update(checkboxSchema)
+            .set(rest)
+            .where(eq(checkboxSchema.id, id));
+        } else {
+          await db.transaction(async (tx) => {
+            await tx.delete(checkboxSchema).where(eq(checkboxSchema.id, id));
+            await insertNewItem(tx, {
+              ...rest,
+              createdAt: new Date(),
+              updatedAt: null,
+            });
+          });
+        }
+        break;
+      case "heading":
+        if (newItemType === "heading") {
+          await db
+            .update(headingSchema)
+            .set(rest)
+            .where(eq(headingSchema.id, id));
+        } else {
+          await db.transaction(async (tx) => {
+            await tx.delete(headingSchema).where(eq(headingSchema.id, id));
+            await insertNewItem(tx, {
+              ...rest,
+              createdAt: new Date(),
+              updatedAt: null,
+            });
+          });
+        }
+        break;
+      case "paragraph":
+        if (newItemType === "paragraph") {
+          await db
+            .update(paragraphSchema)
+            .set(rest)
+            .where(eq(paragraphSchema.id, id));
+        } else {
+          await db.transaction(async (tx) => {
+            await tx.delete(paragraphSchema).where(eq(paragraphSchema.id, id));
+            await insertNewItem(tx, {
+              ...rest,
+              createdAt: new Date(),
+              updatedAt: null,
+            });
+          });
+        }
+        break;
+      case "list":
+        if (newItemType === "list") {
+          await db.update(listSchema).set(rest).where(eq(listSchema.id, id));
+        } else {
+          await db.transaction(async (tx) => {
+            await tx.delete(listSchema).where(eq(listSchema.id, id));
+            await insertNewItem(tx, {
+              ...rest,
+              createdAt: new Date(),
+              updatedAt: null,
+            });
+          });
+        }
+        break;
+      case "link":
+        if (newItemType === "link") {
+          await db.update(linkSchema).set(rest).where(eq(linkSchema.id, id));
+        } else {
+          await db.transaction(async (tx) => {
+            await tx.delete(linkSchema).where(eq(linkSchema.id, id));
+            await insertNewItem(tx, {
+              ...rest,
+              createdAt: new Date(),
+              updatedAt: null,
+            });
+          });
+        }
+        break;
+    }
+
+    revalidateTag("blocks");
+
+    return {
+      success: true,
+      message: `Block item updated successfully`,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      success: false,
+      message: `Failed to update ${newItemType} item`,
+    };
   }
 }
 

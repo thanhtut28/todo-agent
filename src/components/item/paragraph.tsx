@@ -20,6 +20,7 @@ interface Props {
   shouldFocus?: boolean;
   isDraft?: boolean;
   onUpdateDraft?: React.Dispatch<React.SetStateAction<BlockWithContent | null>>;
+  isPreview?: boolean;
 }
 
 export default function ParagraphItem({
@@ -29,15 +30,26 @@ export default function ParagraphItem({
   shouldFocus,
   onUpdateDraft,
   isDraft,
+  isPreview = false,
 }: Props) {
   const [text, setText] = useState(paragraph.text);
   const [isEditing, setIsEditing] = useState(false);
   const contentRef = useRef<HTMLHeadingElement>(null);
 
+  useEffect(() => {
+    if (
+      isPreview &&
+      contentRef.current &&
+      contentRef.current.textContent !== paragraph.text
+    ) {
+      contentRef.current.textContent = paragraph.text ?? "";
+    }
+  }, [paragraph.text, isPreview]);
+
   // Set initial content only once
   useEffect(() => {
     if (contentRef.current && !contentRef.current.textContent) {
-      contentRef.current.textContent = paragraph.text || "";
+      contentRef.current.textContent = paragraph.text ?? "";
     }
   }, [paragraph.text]);
 
@@ -103,6 +115,7 @@ export default function ParagraphItem({
           "ring-opacity-50 ring-1 ring-white": isEditing && isDraft,
           "hover:bg-gray-800": !isEditing,
           "text-blue-500": isDraft,
+          "scale-75": isPreview,
         },
         twFontSize[paragraph.fontSize],
         twFontWeight[paragraph.fontWeight],

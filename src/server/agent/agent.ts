@@ -41,6 +41,7 @@ EXAMPLE OUTPUTS:
 Create list for 5 animals: ${JSON.stringify(exampleOutputs.animals)}
 Create a todo list for today's tasks: ${JSON.stringify(exampleOutputs["todo-list"])}
 Create a roadmap for frontend development: ${JSON.stringify(exampleOutputs.roadmap)}
+Note: you don't have to follow the example outputs exactly, I just want to show you the formats for outputs and you can use your own creativity to generate the content.
 
 STYLING GUIDELINES:
 - Default color theme is dark mode (white text recommended)
