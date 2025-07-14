@@ -13,23 +13,29 @@ An AI-powered todo application with a modern block editor interface. Create, org
 
 ## 🎥 Demo Videos
 
-<!-- Place your video files in docs/videos/ folder and update these paths -->
+### 🤖 AI Content Generation
 
-### AI Content Generation
+![AI Content Generation Demo](./public/assets/ai_generation.gif)
 
-![AI Generation Demo](./public/assets/AI_content_generation.mov)
+Generate todo lists, plans, and structured content using natural language prompts with AI assistance.
 
-### Block Editor Features
+### ✏️ Inline Block Editing
 
-![Inline Block Editing Demo](./public/assets/Inline_block_editing.mov)
+![Inline Block Editing Demo](./public/assets/inline_editing.gif)
 
-![Editing with Block Editor](./public/assets/Editing_with_editor.mov)
+Edit content directly inline with real-time updates and smooth interactions.
+
+### 🎨 Block Editor Features
+
+![Block Editor Demo](./public/assets/editor_demo.gif)
+
+Modify block configs, customize styling, and organize your content with the powerful block editor.
 
 ## 🚀 Tech Stack
 
 - **Frontend**: Next.js 15, React 19, TypeScript
 - **Styling**: Tailwind CSS, Radix UI Components
-- **AI Integration**: OpenAI API
+- **AI Integration**: OpenAI API with typescript SDK
 - **Database**: PostgreSQL with Drizzle ORM
 - **Drag & Drop**: @dnd-kit
 - **Development**: ESLint, Prettier, TypeScript
