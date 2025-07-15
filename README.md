@@ -1,4 +1,4 @@
-# Todo Agent 🤖✅
+# Todo Agent 🤖✅ (WIP)
 
 An AI-powered todo application with a modern block editor interface. Create, organize, and manage your tasks with the help of artificial intelligence.
 
