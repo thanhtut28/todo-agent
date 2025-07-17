@@ -2,6 +2,7 @@ import { pgTable, index, foreignKey, integer, text, boolean, timestamp, pgEnum }
 import { sql } from "drizzle-orm"
 
 export const bgColor = pgEnum("bg_color", ['red', 'orange', 'yellow', 'green', 'blue', 'white', 'black', 'gray', 'purple', 'pink', 'brown', 'cyan', 'teal', 'transparent'])
+export const blockItemVariant = pgEnum("block_item_variant", ['heading', 'checkbox', 'paragraph', 'list', 'link'])
 export const color = pgEnum("color", ['red', 'orange', 'yellow', 'green', 'blue', 'white', 'black', 'gray', 'purple', 'pink', 'brown', 'cyan', 'teal', 'transparent'])
 export const fontSize = pgEnum("font_size", ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl'])
 export const fontStyle = pgEnum("font_style", ['normal', 'italic', 'oblique'])
@@ -23,12 +24,35 @@ export const todoAgentLink = pgTable("todo-agent_link", {
 	createdAt: timestamp({ withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ withTimezone: true, mode: 'string' }),
 	blockId: integer().notNull(),
+	displayOrder: integer().default(0).notNull(),
 }, (table) => [
 	index("link_text_idx").using("btree", table.text.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.blockId],
 			foreignColumns: [todoAgentBlock.id],
 			name: "todo-agent_link_blockId_todo-agent_block_id_fk"
+		}).onUpdate("cascade").onDelete("cascade"),
+]);
+
+export const todoAgentHeading = pgTable("todo-agent_heading", {
+	id: integer().primaryKey().generatedByDefaultAsIdentity({ name: ""todo-agent_heading_id_seq"", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647 }),
+	text: text().notNull(),
+	variant: headingVariant().default('h1').notNull(),
+	fontSize: fontSize().default('2xl').notNull(),
+	fontWeight: fontWeight().default('bold').notNull(),
+	color: color().default('black').notNull(),
+	bgColor: bgColor().default('transparent').notNull(),
+	fontStyle: fontStyle().default('normal').notNull(),
+	createdAt: timestamp({ withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp({ withTimezone: true, mode: 'string' }),
+	blockId: integer().notNull(),
+	displayOrder: integer().default(0).notNull(),
+}, (table) => [
+	index("heading_text_idx").using("btree", table.text.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.blockId],
+			foreignColumns: [todoAgentBlock.id],
+			name: "todo-agent_heading_blockId_todo-agent_block_id_fk"
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
@@ -44,6 +68,7 @@ export const todoAgentCheckbox = pgTable("todo-agent_checkbox", {
 	createdAt: timestamp({ withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ withTimezone: true, mode: 'string' }),
 	blockId: integer().notNull(),
+	displayOrder: integer().default(0).notNull(),
 }, (table) => [
 	index("checkbox_text_idx").using("btree", table.text.asc().nullsLast().op("text_ops")),
 	foreignKey({
@@ -62,42 +87,6 @@ export const todoAgentPage = pgTable("todo-agent_page", {
 	index("page_name_idx").using("btree", table.name.asc().nullsLast().op("text_ops")),
 ]);
 
-export const todoAgentBlock = pgTable("todo-agent_block", {
-	id: integer().primaryKey().generatedByDefaultAsIdentity({ name: ""todo-agent_block_id_seq"", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647 }),
-	text: text().notNull(),
-	createdAt: timestamp({ withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp({ withTimezone: true, mode: 'string' }),
-	pageId: integer().notNull(),
-}, (table) => [
-	index("block_text_idx").using("btree", table.text.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.pageId],
-			foreignColumns: [todoAgentPage.id],
-			name: "todo-agent_block_pageId_todo-agent_page_id_fk"
-		}).onUpdate("cascade").onDelete("cascade"),
-]);
-
-export const todoAgentHeading = pgTable("todo-agent_heading", {
-	id: integer().primaryKey().generatedByDefaultAsIdentity({ name: ""todo-agent_heading_id_seq"", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647 }),
-	text: text().notNull(),
-	variant: headingVariant().default('h1').notNull(),
-	fontSize: fontSize().default('2xl').notNull(),
-	fontWeight: fontWeight().default('bold').notNull(),
-	color: color().default('black').notNull(),
-	bgColor: bgColor().default('transparent').notNull(),
-	fontStyle: fontStyle().default('normal').notNull(),
-	createdAt: timestamp({ withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp({ withTimezone: true, mode: 'string' }),
-	blockId: integer().notNull(),
-}, (table) => [
-	index("heading_text_idx").using("btree", table.text.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.blockId],
-			foreignColumns: [todoAgentBlock.id],
-			name: "todo-agent_heading_blockId_todo-agent_block_id_fk"
-		}).onUpdate("cascade").onDelete("cascade"),
-]);
-
 export const todoAgentParagraph = pgTable("todo-agent_paragraph", {
 	id: integer().primaryKey().generatedByDefaultAsIdentity({ name: ""todo-agent_paragraph_id_seq"", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647 }),
 	text: text().notNull(),
@@ -109,12 +98,29 @@ export const todoAgentParagraph = pgTable("todo-agent_paragraph", {
 	createdAt: timestamp({ withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ withTimezone: true, mode: 'string' }),
 	blockId: integer().notNull(),
+	displayOrder: integer().default(0).notNull(),
 }, (table) => [
 	index("paragraph_text_idx").using("btree", table.text.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.blockId],
 			foreignColumns: [todoAgentBlock.id],
 			name: "todo-agent_paragraph_blockId_todo-agent_block_id_fk"
+		}).onUpdate("cascade").onDelete("cascade"),
+]);
+
+export const todoAgentBlock = pgTable("todo-agent_block", {
+	id: integer().primaryKey().generatedByDefaultAsIdentity({ name: ""todo-agent_block_id_seq"", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647 }),
+	text: text().notNull(),
+	createdAt: timestamp({ withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp({ withTimezone: true, mode: 'string' }),
+	pageId: integer().notNull(),
+	displayOrder: integer().default(0).notNull(),
+}, (table) => [
+	index("block_text_idx").using("btree", table.text.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.pageId],
+			foreignColumns: [todoAgentPage.id],
+			name: "todo-agent_block_pageId_todo-agent_page_id_fk"
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
@@ -130,6 +136,7 @@ export const todoAgentList = pgTable("todo-agent_list", {
 	createdAt: timestamp({ withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ withTimezone: true, mode: 'string' }),
 	blockId: integer().notNull(),
+	displayOrder: integer().default(0).notNull(),
 }, (table) => [
 	index("list_text_idx").using("btree", table.text.asc().nullsLast().op("text_ops")),
 	foreignKey({
