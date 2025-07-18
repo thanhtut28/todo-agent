@@ -14,7 +14,7 @@ import {
   deleteCheckbox,
   updateCheckbox,
   updateCheckboxText,
-} from "~/server/db/actions";
+} from "~/server/db/actions/checkbox-actions";
 import type {
   BlockWithContent,
   Checkbox as CheckboxType,

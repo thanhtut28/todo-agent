@@ -1,8 +1,8 @@
 import SignInButton from "../auth/sign-in-button";
 import UserAvatar from "../auth/user-avatar";
-import type { User } from "better-auth";
 import { auth } from "~/lib/auth";
 import { headers } from "next/headers";
+import type { User } from "~/server/db/schema";
 
 export default async function Navbar() {
   const session = await auth.api.getSession({

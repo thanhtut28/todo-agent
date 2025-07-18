@@ -1,17 +1,17 @@
 "use client";
-import { authClient } from "~/lib/auth-client";
 import { Button } from "../ui/button";
+import { signIn } from "~/lib/auth-client";
 
 export default function SignInButton() {
+  const handleSignIn = async () => {
+    await signIn.social({
+      provider: "google",
+      callbackURL: "/api/sign-in",
+    });
+  };
+
   return (
-    <Button
-      variant="outline"
-      onClick={() =>
-        authClient.signIn.social({
-          provider: "google",
-        })
-      }
-    >
+    <Button variant="outline" onClick={handleSignIn}>
       Login With Google
     </Button>
   );

@@ -10,7 +10,7 @@ import {
   type CreateNewBlockType,
 } from "~/lib/types";
 import { cn } from "~/lib/utils";
-import { updateParagraphText } from "~/server/db/actions";
+import { updateParagraphText } from "~/server/db/actions/paragraph-actions";
 import { type BlockWithContent, type Paragraph } from "~/server/db/schema";
 
 interface Props {

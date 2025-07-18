@@ -1,5 +1,5 @@
-import { generateBlocksWithAgentStream } from "~/server/db/actions";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
+import { generateBlocksWithAgentStream } from "~/server/db/actions/agent-actions";
 
 export async function POST(request: NextRequest) {
   const { prompt, pageId, lastBlockDisplayOrder } = await request.json();

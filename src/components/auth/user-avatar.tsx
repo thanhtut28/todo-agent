@@ -1,4 +1,3 @@
-import type { User } from "better-auth";
 import { LogOutIcon } from "lucide-react";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
@@ -13,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import type { User } from "~/server/db/schema";
 
 interface UserAvatarProps {
   user: User;

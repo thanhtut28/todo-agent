@@ -18,7 +18,11 @@ export default async function Page({
   const { pageId } = await params;
   const blocks = await getCachedBlocks(pageId);
 
-  if (!session) {
+  const userId = session?.user.id;
+  const pageUserId = blocks?.[0]?.page.userId;
+  const isAuthorized = userId && userId === pageUserId;
+
+  if (!session || !isAuthorized) {
     redirect("/");
   }
 
