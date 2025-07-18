@@ -1,4 +1,3 @@
-import { arrayMove } from "@dnd-kit/sortable";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import {
@@ -7,14 +6,13 @@ import {
   type BlockItem,
 } from "~/server/agent/tool";
 import type {
-  Heading,
-  Checkbox,
-  Paragraph,
-  ListItem,
-  Link,
   BlockWithContent,
+  Checkbox,
+  Heading,
+  Link,
+  ListItem,
+  Paragraph,
 } from "~/server/db/schema";
-import type { AIGeneratedPage } from "~/server/openai";
 import type { BlockItemType, BlockItemVariantType } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
@@ -105,6 +103,7 @@ export function covertAIGeneratedContentToBlockWithContent(
       name: "",
       createdAt: new Date(),
       updatedAt: null,
+      userId: "",
     },
     displayOrder: lastBlockDisplayOrder + 1,
   };
@@ -220,6 +219,7 @@ export function createDraftBlock(
       name: "",
       createdAt: new Date(),
       updatedAt: null,
+      userId: "",
     },
     displayOrder: lastBlockDisplayOrder + 1,
   };

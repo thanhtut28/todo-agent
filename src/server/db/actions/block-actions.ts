@@ -1,22 +1,15 @@
 "use server";
 
-import { run } from "@openai/agents";
 import { eq } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
-import {
-  covertAIGeneratedContentToBlockWithContent,
-  type FlattenBlockItem,
-} from "~/lib/utils";
+import { type FlattenBlockItem } from "~/lib/utils";
 
 import type {
   BlockItemType,
   BlockItemVariantType,
   CreateNewBlockType,
 } from "~/lib/types";
-import { db } from ".";
-import agent from "../agent/agent";
-import { createPageFromAI } from "../openai";
-import { blockGenerationOutput } from "./../agent/tool";
+import { db } from "..";
 import {
   blocks as blockSchema,
   checkboxes as checkboxSchema,
@@ -30,51 +23,7 @@ import {
   type Link,
   type ListItem,
   type Paragraph,
-} from "./schema";
-
-export async function updateCheckbox(checked: boolean, id: number) {
-  try {
-    await db
-      .update(checkboxSchema)
-      .set({ checked })
-      .where(eq(checkboxSchema.id, id));
-
-    revalidateTag("blocks");
-    return { success: true, message: "Checkbox updated successfully" };
-  } catch (error) {
-    console.error(error);
-    return { success: false, message: "Failed to update checkbox" };
-  }
-}
-
-export async function generateStructuredContentWithAI(
-  formData: FormData,
-  pageId: string,
-  lastBlockDisplayOrder: number,
-): Promise<{ success: boolean; result?: BlockWithContent; error?: string }> {
-  const prompt = formData.get("prompt") as string;
-
-  if (!prompt) {
-    return { success: false, error: "Prompt is required" };
-  }
-
-  try {
-    const result = await createPageFromAI(
-      prompt,
-      pageId,
-      lastBlockDisplayOrder,
-    );
-
-    return { success: true, result: result.result };
-  } catch (error) {
-    return {
-      success: false,
-      error: `Failed to generate structured content, ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-    };
-  }
-}
+} from "../schema";
 
 export async function saveDraftIntoDb(draft: BlockWithContent) {
   const createBlockValues = {
@@ -397,75 +346,6 @@ export async function updateBlockItem(
   }
 }
 
-export async function updateHeadingText(id: number, text: string) {
-  try {
-    await db
-      .update(headingSchema)
-      .set({ text })
-      .where(eq(headingSchema.id, id));
-
-    revalidateTag("blocks");
-    return { success: true, message: "Heading updated successfully" };
-  } catch (error) {
-    console.error(error);
-    return { success: false, message: "Failed to update heading" };
-  }
-}
-
-export async function updateParagraphText(id: number, text: string) {
-  try {
-    await db
-      .update(paragraphSchema)
-      .set({ text })
-      .where(eq(paragraphSchema.id, id));
-
-    revalidateTag("blocks");
-    return { success: true, message: "Paragraph updated successfully" };
-  } catch (error) {
-    console.error(error);
-    return { success: false, message: "Failed to update paragraph" };
-  }
-}
-
-export async function updateCheckboxText(id: number, text: string) {
-  try {
-    await db
-      .update(checkboxSchema)
-      .set({ text })
-      .where(eq(checkboxSchema.id, id));
-
-    revalidateTag("blocks");
-    return { success: true, message: "Checkbox text updated successfully" };
-  } catch (error) {
-    console.error(error);
-    return { success: false, message: "Failed to update checkbox text" };
-  }
-}
-
-export async function updateListItemText(id: number, text: string) {
-  try {
-    await db.update(listSchema).set({ text }).where(eq(listSchema.id, id));
-
-    revalidateTag("blocks");
-    return { success: true, message: "List item text updated successfully" };
-  } catch (error) {
-    console.error(error);
-    return { success: false, message: "Failed to update list item text" };
-  }
-}
-
-export async function deleteCheckbox(id: number) {
-  try {
-    await db.delete(checkboxSchema).where(eq(checkboxSchema.id, id));
-
-    revalidateTag("blocks");
-    return { success: true, message: "Checkbox deleted successfully" };
-  } catch (error) {
-    console.error(error);
-    return { success: false, message: "Failed to delete checkbox" };
-  }
-}
-
 export async function updateBlock(items: FlattenBlockItem[]) {
   try {
     console.log("items", items);
@@ -523,105 +403,4 @@ export async function updateBlock(items: FlattenBlockItem[]) {
   revalidateTag("blocks");
 
   return { success: true, message: "Block updated successfully" };
-}
-
-//  ================================================ Agent ================================================
-
-export async function generateBlocksWithAgent(
-  formData: FormData,
-  pageId: string,
-  lastBlockDisplayOrder: number,
-) {
-  const prompt = formData.get("prompt") as string;
-
-  if (!prompt) {
-    return { success: false, error: "Prompt is required" };
-  }
-
-  try {
-    const result = await run(agent, prompt, { stream: false });
-    const jsonParsed = JSON.parse(result.finalOutput ?? "{}");
-    const parsedResult = blockGenerationOutput.parse(jsonParsed);
-
-    const blockWithContent = covertAIGeneratedContentToBlockWithContent(
-      parsedResult,
-      pageId,
-      lastBlockDisplayOrder,
-    );
-
-    return { success: true, result: blockWithContent };
-  } catch (error) {
-    console.error("Error generating blocks with agent:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
-
-export async function* generateBlocksWithAgentStream(
-  prompt: string,
-  pageId: string,
-  lastBlockDisplayOrder: number,
-) {
-  try {
-    const result = await run(agent, prompt, { stream: true });
-
-    // Get the text stream for progressive text updates
-    const textStream = result.toTextStream();
-    let accumulatedText = "";
-
-    // Stream text updates
-    for await (const textChunk of textStream) {
-      accumulatedText += textChunk;
-      yield {
-        type: "text_update",
-        content: textChunk,
-        accumulated: accumulatedText,
-      };
-    }
-
-    // Wait for completion to ensure all output is flushed
-    await result.completed;
-
-    // Get final result after streaming is complete
-    const finalOutput = result.finalOutput;
-    if (finalOutput) {
-      try {
-        const jsonParsed = JSON.parse(finalOutput);
-        const parsedResult = blockGenerationOutput.parse(jsonParsed);
-
-        const blockWithContent = covertAIGeneratedContentToBlockWithContent(
-          parsedResult,
-          pageId,
-          lastBlockDisplayOrder,
-        );
-
-        yield {
-          type: "final_result",
-          content: blockWithContent,
-        };
-      } catch (parseError) {
-        console.error("Failed to parse final AI output:", {
-          error: parseError,
-          rawOutput: finalOutput,
-        });
-        yield {
-          type: "error",
-          content: `Failed to parse generated content: ${parseError instanceof Error ? parseError.message : "Unknown parsing error"}`,
-        };
-      }
-    } else {
-      // No final output received - this shouldn't happen normally
-      yield {
-        type: "error",
-        content: "No final output received from AI agent",
-      };
-    }
-  } catch (error) {
-    yield {
-      type: "error",
-      content: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
 }

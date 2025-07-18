@@ -21,7 +21,10 @@ import {
   swapDisplayOrder,
   type FlattenBlockItem,
 } from "~/lib/utils";
-import { createNewBlockItem, updateBlock } from "~/server/db/actions";
+import {
+  createNewBlockItem,
+  updateBlock,
+} from "~/server/db/actions/block-actions";
 import type { BlockWithContent } from "~/server/db/schema";
 import SortableItem from "../sortable/sortable-item";
 import { Button } from "../ui/button";
@@ -151,7 +154,7 @@ export default function BlockItem({
           >
             {flattenBlockItems(block).map((item) => (
               <div
-                key={`placeholder-${item.item.id}`}
+                key={`placeholder-${item.variant}-${item.item.id}`}
                 className="flex items-center gap-2"
               >
                 <GripVerticalIcon className="h-4 w-4 text-gray-500" />
@@ -223,7 +226,7 @@ export default function BlockItem({
             <div className={cn("flex h-full w-full flex-col gap-1.5", {})}>
               {items.map((item) => (
                 <SortableItem
-                  key={item.item.id}
+                  key={`${item.variant}-${item.item.id}`}
                   id={item.item.id}
                   item={item.item}
                   blockType={item.variant}

@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import type { KeyboardEvent } from "react";
 import { cn } from "~/lib/utils";
 import { type BlockWithContent, type Heading } from "~/server/db/schema";
-import { updateHeadingText } from "~/server/db/actions";
+import { updateHeadingText } from "~/server/db/actions/heading-actions";
 import {
   twBgColor,
   twColor,

@@ -7,7 +7,10 @@ import {
   createDraftBlock,
   sliceUnbalancedTextFromStream,
 } from "~/lib/utils";
-import { deleteBlockFromDb, saveDraftIntoDb } from "~/server/db/actions";
+import {
+  deleteBlockFromDb,
+  saveDraftIntoDb,
+} from "~/server/db/actions/block-actions";
 import type {
   BlockWithContent,
   Checkbox,
@@ -151,7 +154,6 @@ export default function PageTemplate({ blocks, pageId }: Props) {
               }
 
               setDraftBlock((prev) => {
-                console.log("prev", prev);
                 if (!prev) {
                   const draftBlock = createDraftBlock(
                     event.content.pageName ?? "Dummy Page",

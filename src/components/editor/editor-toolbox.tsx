@@ -5,7 +5,7 @@ import PreviewItem from "./preview-item";
 import { useEffect, useMemo, useState } from "react";
 import { Separator } from "../ui/separator";
 import EditorAction from "./editor-action";
-import { updateBlockItem } from "~/server/db/actions";
+import { updateBlockItem } from "~/server/db/actions/block-actions";
 import ColorEditor from "./color-editor";
 import { ScrollArea } from "../ui/scroll-area";
 import VariantConfigEditor from "./variant-config-editor";

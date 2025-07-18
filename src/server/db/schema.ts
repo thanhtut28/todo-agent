@@ -76,6 +76,69 @@ export const listType = pgEnum("list_type", [
   "numbered",
 ]);
 
+// Better Auth tables
+export const user = createTable("user", (t) => ({
+  id: t.text().primaryKey(),
+  name: t.text().notNull(),
+  email: t.text().notNull().unique(),
+  emailVerified: t
+    .boolean()
+    .$defaultFn(() => false)
+    .notNull(),
+  image: t.text(),
+  createdAt: t
+    .timestamp({ withTimezone: true })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: t
+    .timestamp({ withTimezone: true })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  hasOnboarded: t.boolean().default(false).notNull(),
+}));
+
+export const session = createTable("session", (t) => ({
+  id: t.text().primaryKey(),
+  expiresAt: t.timestamp({ withTimezone: true }).notNull(),
+  token: t.text().notNull().unique(),
+  createdAt: t.timestamp({ withTimezone: true }).notNull(),
+  updatedAt: t.timestamp({ withTimezone: true }).notNull(),
+  ipAddress: t.text(),
+  userAgent: t.text(),
+  userId: t
+    .text()
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+}));
+
+export const account = createTable("account", (t) => ({
+  id: t.text().primaryKey(),
+  accountId: t.text().notNull(),
+  providerId: t.text().notNull(),
+  userId: t
+    .text()
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  accessToken: t.text(),
+  refreshToken: t.text(),
+  idToken: t.text(),
+  accessTokenExpiresAt: t.timestamp({ withTimezone: true }),
+  refreshTokenExpiresAt: t.timestamp({ withTimezone: true }),
+  scope: t.text(),
+  password: t.text(),
+  createdAt: t.timestamp({ withTimezone: true }).notNull(),
+  updatedAt: t.timestamp({ withTimezone: true }).notNull(),
+}));
+
+export const verification = createTable("verification", (t) => ({
+  id: t.text().primaryKey(),
+  identifier: t.text().notNull(),
+  value: t.text().notNull(),
+  expiresAt: t.timestamp({ withTimezone: true }).notNull(),
+  createdAt: t.timestamp({ withTimezone: true }).$defaultFn(() => new Date()),
+  updatedAt: t.timestamp({ withTimezone: true }).$defaultFn(() => new Date()),
+}));
+
 export const checkboxes = createTable(
   "checkbox",
   (d) => ({
@@ -248,10 +311,39 @@ export const pages = createTable(
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+    userId: d
+      .text()
+      .notNull()
+      .references(() => user.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
   }),
   (t) => [index("page_name_idx").on(t.name)],
 );
 
+// Auth relations
+export const userRelations = relations(user, ({ many }) => ({
+  sessions: many(session),
+  accounts: many(account),
+  pages: many(pages),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+// Content relations
 export const checkboxesRelations = relations(checkboxes, ({ one }) => ({
   block: one(blocks, {
     fields: [checkboxes.blockId],
@@ -299,11 +391,19 @@ export const blockRelations = relations(blocks, ({ many, one }) => ({
   }),
 }));
 
-export const pageRelations = relations(pages, ({ many }) => ({
+export const pageRelations = relations(pages, ({ many, one }) => ({
   blocks: many(blocks),
+  user: one(user, {
+    fields: [pages.userId],
+    references: [user.id],
+  }),
 }));
 
-// Base types without relations to avoid circular dependencies
+// Types
+export type User = InferSelectModel<typeof user>;
+export type Session = InferSelectModel<typeof session>;
+export type Account = InferSelectModel<typeof account>;
+export type Verification = InferSelectModel<typeof verification>;
 export type Paragraph = InferSelectModel<typeof paragraphs>;
 export type Heading = InferSelectModel<typeof headings>;
 export type ListItem = InferSelectModel<typeof listItems>;
@@ -342,91 +442,3 @@ export type PageWithBlocks = Page & {
 export type PageWithFullContent = Page & {
   blocks: BlockWithContent[];
 };
-
-// Better Auth tables
-export const user = createTable("user", (t) => ({
-  id: t.text().primaryKey(),
-  name: t.text().notNull(),
-  email: t.text().notNull().unique(),
-  emailVerified: t
-    .boolean()
-    .$defaultFn(() => false)
-    .notNull(),
-  image: t.text(),
-  createdAt: t
-    .timestamp({ withTimezone: true })
-    .$defaultFn(() => new Date())
-    .notNull(),
-  updatedAt: t
-    .timestamp({ withTimezone: true })
-    .$defaultFn(() => new Date())
-    .notNull(),
-}));
-
-export const session = createTable("session", (t) => ({
-  id: t.text().primaryKey(),
-  expiresAt: t.timestamp({ withTimezone: true }).notNull(),
-  token: t.text().notNull().unique(),
-  createdAt: t.timestamp({ withTimezone: true }).notNull(),
-  updatedAt: t.timestamp({ withTimezone: true }).notNull(),
-  ipAddress: t.text(),
-  userAgent: t.text(),
-  userId: t
-    .text()
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-}));
-
-export const account = createTable("account", (t) => ({
-  id: t.text().primaryKey(),
-  accountId: t.text().notNull(),
-  providerId: t.text().notNull(),
-  userId: t
-    .text()
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  accessToken: t.text(),
-  refreshToken: t.text(),
-  idToken: t.text(),
-  accessTokenExpiresAt: t.timestamp({ withTimezone: true }),
-  refreshTokenExpiresAt: t.timestamp({ withTimezone: true }),
-  scope: t.text(),
-  password: t.text(),
-  createdAt: t.timestamp({ withTimezone: true }).notNull(),
-  updatedAt: t.timestamp({ withTimezone: true }).notNull(),
-}));
-
-export const verification = createTable("verification", (t) => ({
-  id: t.text().primaryKey(),
-  identifier: t.text().notNull(),
-  value: t.text().notNull(),
-  expiresAt: t.timestamp({ withTimezone: true }).notNull(),
-  createdAt: t.timestamp({ withTimezone: true }).$defaultFn(() => new Date()),
-  updatedAt: t.timestamp({ withTimezone: true }).$defaultFn(() => new Date()),
-}));
-
-// Auth relations
-export const userRelations = relations(user, ({ many }) => ({
-  sessions: many(session),
-  accounts: many(account),
-}));
-
-export const sessionRelations = relations(session, ({ one }) => ({
-  user: one(user, {
-    fields: [session.userId],
-    references: [user.id],
-  }),
-}));
-
-export const accountRelations = relations(account, ({ one }) => ({
-  user: one(user, {
-    fields: [account.userId],
-    references: [user.id],
-  }),
-}));
-
-// Auth types
-export type User = InferSelectModel<typeof user>;
-export type Session = InferSelectModel<typeof session>;
-export type Account = InferSelectModel<typeof account>;
-export type Verification = InferSelectModel<typeof verification>;
