@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import { auth } from "~/lib/auth";
 import { db } from "~/server/db";
-import { markUserAsOnboarded } from "~/server/db/actions/auth-actions";
+import { markUserAsOnboarded } from "~/server/db/actions/user-actions";
 import { createGettingStartedPage } from "~/server/db/actions/page-actions";
 import { user as userSchema } from "~/server/db/schema";
 
@@ -13,7 +13,6 @@ export async function GET() {
     headers: await headers(),
   });
 
-  console.log("session", session);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -23,7 +22,6 @@ export async function GET() {
     where: eq(userSchema.id, userId),
   });
 
-  console.log("user", user);
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }

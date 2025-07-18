@@ -6,6 +6,7 @@ export default function SignInButton() {
   const handleSignIn = async () => {
     await signIn.social({
       provider: "google",
+      // To Trigger onboarding flow
       callbackURL: "/api/sign-in",
     });
   };
